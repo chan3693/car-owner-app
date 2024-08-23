@@ -1,15 +1,58 @@
-import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Switch } from "react-native";
 
 import { auth } from "../config/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { db } from "../config/FirebaseConfig";
-import { doc, getDoc} from 'firebase/firestore';
+import { collectionGroup, doc, getDoc} from 'firebase/firestore';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SignInScreen = ( {navigation} ) => {
-    const [emailAddress, setEmailAddress] = useState('owner@gmail.com');
-    const [password, setPassword] = useState('owner123');
+    const [emailAddress, setEmailAddress] = useState('');
+    const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false)
+
+    useEffect(()=>{
+        loadUserData();
+    }, [])
+
+    const loadUserData = async()=>{
+        try{
+            const savedEmail = await AsyncStorage.getItem('emailAddress')
+            const savedPassword = await AsyncStorage.getItem('password')
+            if (savedEmail && savedPassword) {
+                setEmailAddress(savedEmail)
+                setPassword(savedPassword)
+                setRememberMe(true)
+                console.log(`Loaded user data : ${savedEmail}`)
+
+                // await signInUser(savedEmail, savedPassword)
+            }
+        }catch(err){
+            console.log(`Error while loading user data : ${err}`)
+        }
+    }
+
+    const saveUserData = async (email, pw) => {
+        try {
+            await AsyncStorage.setItem('emailAddress', email)
+            await AsyncStorage.setItem('password', pw)
+            console.log(`Saved user data : ${email}`)
+        } catch (err) {
+            console.log(`Error while saving user data : ${err}`)
+        }
+    }
+
+    const clearUserData = async()=>{
+        try {
+            await AsyncStorage.removeItem('emailAddress')
+            await AsyncStorage.removeItem('password')
+            console.log(`Cleared user data`)
+        } catch (err){
+            console.log(`Error while clearing user id : ${err}`)
+        }
+    } 
 
     const checkUser = async (docId) =>{
         try {
@@ -29,6 +72,26 @@ const SignInScreen = ( {navigation} ) => {
         }
     }   
 
+    const signInUser = async (email, pw)=>{
+        try{
+            const userCredentials = await signInWithEmailAndPassword(auth, email, pw)
+            const userId = userCredentials.user.uid;
+            console.log(`userCredentials id : ${userId}`)
+
+            const userInDb = await checkUser(userId)
+            if (userInDb) {
+                navigation.navigate("Listing Screen", {userId})
+                console.log(`Signed In successfully`)
+            } else {
+                console.log("User is not authorized to access")
+                Alert.alert("User is not authorized to access")
+            }
+        }catch(err){
+            console.log(`Error while signing in : ${err}`)
+            Alert.alert("Invalid email or password", "Invalid email or password") 
+        }
+    }
+
     const onSignInClicked = async () => {
         console.log(`sign in clicked`);
        
@@ -39,25 +102,15 @@ const SignInScreen = ( {navigation} ) => {
         }
         
         try{
-            const userCredentials = await signInWithEmailAndPassword(auth, emailAddress, password)
-            const userId = userCredentials.user.uid
-            const userEmail = userCredentials.user.email
+            await signInUser(emailAddress, password);
 
-            console.log(`userCredentials id : ${userId}`)
-            console.log(`userCredentials email : ${userEmail}`)
-
-            const userInDb = await checkUser(userId)
-
-            if (userInDb) {
-                navigation.navigate("Listing Screen", {userId})
-                console.log(`Signed In successfully`)
+            if (rememberMe){
+                await saveUserData(emailAddress, password);
             }else{
-                console.log("User is not authorized to access")
-                Alert.alert("User is not authorized to access")
+                await clearUserData();
             }
         }catch(err){
             console.log(`Error while signing in : ${err}`)
-            Alert.alert("Invalid email or password", "Invalid email or password")
         }
 
     }
@@ -89,6 +142,14 @@ const SignInScreen = ( {navigation} ) => {
             <TouchableOpacity style={styles.buttonStyle} onPress={onSignInClicked}>
                 <Text style={styles.buttonTextStyle}>Sign In</Text>
             </TouchableOpacity>
+
+            <View style={styles.switchContainer}>
+                <Text>Remember Me</Text>
+                <Switch
+                    value={rememberMe}
+                    onValueChange={setRememberMe}
+                />
+            </View>
             
         </View>
     );
@@ -130,6 +191,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color:'#000',
         fontSize: 20
+    },
+    switchContainer: {
+        alignItems: 'flex-end',
+        marginTop: 10,
+        marginRight: 10
     }
 });
 
