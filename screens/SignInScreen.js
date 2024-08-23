@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Switch } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { auth } from "../config/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { db } from "../config/FirebaseConfig";
-import { collectionGroup, doc, getDoc} from 'firebase/firestore';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { doc, getDoc} from 'firebase/firestore';
+
 
 const SignInScreen = ( {navigation} ) => {
     const [emailAddress, setEmailAddress] = useState('');
@@ -17,6 +18,7 @@ const SignInScreen = ( {navigation} ) => {
         loadUserData();
     }, [])
 
+    // load the saved user to interface
     const loadUserData = async()=>{
         try{
             const savedEmail = await AsyncStorage.getItem('emailAddress')
@@ -34,6 +36,7 @@ const SignInScreen = ( {navigation} ) => {
         }
     }
 
+    //store the user email and pw
     const saveUserData = async (email, pw) => {
         try {
             await AsyncStorage.setItem('emailAddress', email)
@@ -44,6 +47,7 @@ const SignInScreen = ( {navigation} ) => {
         }
     }
 
+    //clear the user email and pw
     const clearUserData = async()=>{
         try {
             await AsyncStorage.removeItem('emailAddress')
@@ -54,6 +58,7 @@ const SignInScreen = ( {navigation} ) => {
         }
     } 
 
+    //check the user if exist in db
     const checkUser = async (docId) =>{
         try {
             const docRef = doc(db, "Car Owner DB", docId)
@@ -72,6 +77,7 @@ const SignInScreen = ( {navigation} ) => {
         }
     }   
 
+    //sign in function
     const signInUser = async (email, pw)=>{
         try{
             const userCredentials = await signInWithEmailAndPassword(auth, email, pw)
@@ -92,6 +98,7 @@ const SignInScreen = ( {navigation} ) => {
         }
     }
 
+    //perform sign in action while chicked button
     const onSignInClicked = async () => {
         console.log(`sign in clicked`);
        
