@@ -7,11 +7,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { auth } from './config/FirebaseConfig';
 import { signOut } from 'firebase/auth';
+import { deleteToken } from 'firebase/messaging';
 
 import SignInScreen from './screens/SignInScreen';
 import ListingScreen from './screens/ListingScreen';
 import BookingScreen from './screens/BookingScreen'
 
+import { setupBackgroundListener } from './services/NotificationService';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +22,9 @@ export default function App() {
 
   useEffect(()=>{
     checkLoginStatus();
+
+    const unsubscribe = setupBackgroundListener();
+    return () => unsubscribe();
   },[]);
   
   const checkLoginStatus = async()=>{
@@ -52,6 +57,7 @@ export default function App() {
       await AsyncStorage.removeItem('userId')
       console.log(`authToken removed local`)
       console.log(`Successfully signed out`);
+      await deleteToken();
       setInitialRoute('Sign In Screen');
       
       navigation.dispatch(

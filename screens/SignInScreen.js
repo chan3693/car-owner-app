@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { db } from "../config/FirebaseConfig";
 import { doc, getDoc } from 'firebase/firestore';
 
-import { registerForPushNotificationsAsync } from "../services/NotificationService";
+import { requestNotificationPermissions } from "../services/NotificationService";
 
 const SignInScreen = ( {navigation} ) => {
     const [emailAddress, setEmailAddress] = useState('');
@@ -97,8 +97,11 @@ const SignInScreen = ( {navigation} ) => {
 
                 navigation.replace("Listing Screen")
 
-                await registerForPushNotificationsAsync();
-                
+                const token = await requestNotificationPermissions();
+                if (token) {
+                    console.log(`Notification token : ${token}`)
+                }
+
                 console.log(`Signed In successfully`)
             } else {
                 console.log("User is not authorized to access")
