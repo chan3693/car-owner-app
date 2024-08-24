@@ -3,11 +3,33 @@ import { useState, useEffect } from 'react';
 import { db } from '../config/FirebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import * as Location from "expo-location"
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ListingScreen = ({navigation, route}) => {
     //Get Current User
-    const { userId } = route.params
+    // const { userId } = route.params
+   
+    const [userId, setUserId] = useState(null);
+    console.log(`Receive userId : ${userId}`)
 
+    const getUserId = async()=>{
+        try {
+            let savedUserId = await AsyncStorage.getItem('userId')
+            console.log(`Receive userId : ${userId}`)
+            if (savedUserId) {
+                setUserId(savedUserId)
+            } else {
+                console.log('No userId found, redirecting to Sign In Screen')
+            }
+        }catch(err){
+            console.log(`Error while retrieving userId : ${err}`)
+        }
+    }
+    useEffect(()=>{
+        getUserId();
+    },[])
+   
+    
     //Vehicle Information:
     const [vehicleMake, setVehicleMake] = useState('')
     const [vehicleModel, setVehicleModel] = useState('')

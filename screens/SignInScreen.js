@@ -4,10 +4,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { auth } from "../config/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
-
 import { db } from "../config/FirebaseConfig";
-import { doc, getDoc} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
+import { registerForPushNotificationsAsync } from "../services/NotificationService";
 
 const SignInScreen = ( {navigation} ) => {
     const [emailAddress, setEmailAddress] = useState('');
@@ -28,8 +28,6 @@ const SignInScreen = ( {navigation} ) => {
                 setPassword(savedPassword)
                 setRememberMe(true)
                 console.log(`Loaded user data : ${savedEmail}`)
-
-                // await signInUser(savedEmail, savedPassword)
             }
         }catch(err){
             console.log(`Error while loading user data : ${err}`)
@@ -86,7 +84,21 @@ const SignInScreen = ( {navigation} ) => {
 
             const userInDb = await checkUser(userId)
             if (userInDb) {
-                navigation.navigate("Listing Screen", {userId})
+                await AsyncStorage.setItem('authToken', userId)
+                console.log(`authToken stored local`)
+
+                if (rememberMe){
+                    await saveUserData(email, pw);
+                }else{
+                    await clearUserData();
+                }
+                
+                await AsyncStorage.setItem('userId', userId)
+
+                navigation.replace("Listing Screen")
+
+                await registerForPushNotificationsAsync();
+                
                 console.log(`Signed In successfully`)
             } else {
                 console.log("User is not authorized to access")
@@ -94,7 +106,7 @@ const SignInScreen = ( {navigation} ) => {
             }
         }catch(err){
             console.log(`Error while signing in : ${err}`)
-            Alert.alert("Invalid email or password", "Invalid email or password") 
+            Alert.alert("Invalid email or password", "Invalid email or password")
         }
     }
 
@@ -105,21 +117,9 @@ const SignInScreen = ( {navigation} ) => {
         if (!emailAddress || !password){
             console.log("empty email and password")
             Alert.alert("Please input email and password")
-            return
+            return;
         }
-        
-        try{
-            await signInUser(emailAddress, password);
-
-            if (rememberMe){
-                await saveUserData(emailAddress, password);
-            }else{
-                await clearUserData();
-            }
-        }catch(err){
-            console.log(`Error while signing in : ${err}`)
-        }
-
+        await signInUser(emailAddress, password);
     }
 
     return(

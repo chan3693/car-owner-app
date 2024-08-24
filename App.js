@@ -1,36 +1,83 @@
-import { StyleSheet, View, TouchableOpacity, Text} from 'react-native';
-import { NavigationContainer, StackActions } from '@react-navigation/native';
+import { StyleSheet, View, TouchableOpacity, Text, ActivityIndicator} from 'react-native';
+import { CommonActions, NavigationContainer, StackActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { auth } from './config/FirebaseConfig';
 import { signOut } from 'firebase/auth';
 
 import SignInScreen from './screens/SignInScreen';
 import ListingScreen from './screens/ListingScreen';
-import BookingScreen from './screens/BookingScreen';
+import BookingScreen from './screens/BookingScreen'
+
 
 const Stack = createNativeStackNavigator();
+
+export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null)
+
+  useEffect(()=>{
+    checkLoginStatus();
+  },[]);
+  
+  const checkLoginStatus = async()=>{
+    try {
+      const savedToken = await AsyncStorage.getItem('authToken');
+      const savedUserId = await AsyncStorage.getItem('userId')
+      console.log(`savedToken : ${savedToken}`)
+      console.log(`savedUserId : ${savedUserId}`)
+
+      if(savedToken && savedUserId){
+        setInitialRoute('Listing Screen');
+      }else{
+        setInitialRoute('Sign In Screen');
+      }
+    }catch(err){
+      console.log(`Error while checking login status : ${err}`)
+      setInitialRoute('Sign In Screen');
+    }
+  }
+
+  useEffect(()=>{
+    console.log(`initialRoute : ${initialRoute}`)
+  },[initialRoute])
+
   //function perform logout
   const performLogout = async({navigation}) => {
     try{
       await signOut(auth)
-
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userId')
+      console.log(`authToken removed local`)
       console.log(`Successfully signed out`);
+      setInitialRoute('Sign In Screen');
       
-      if (navigation.canGoBack()){
-        navigation.dispatch(StackActions.popToTop())
-      }
-
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Sign In Screen' }]
+        })
+      )
+    
     }catch(err){
       console.log(`Error while signing out : ${err}`);
     }
   }
 
+  if( initialRoute === null){
+    return (
+      <View>
+        <ActivityIndicator size="large"/>
+      </View>
+    )
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator 
-            initialRouteName='Car Owner App G08' 
+            initialRouteName={initialRoute}
             screenOptions={ () => ({
               headerStyle: {backgroundColor: '#d6cabc'},
               headerTintColor: '#000',
@@ -40,27 +87,36 @@ const Stack = createNativeStackNavigator();
           }) 
         }
       >
-      <Stack.Screen component={SignInScreen} name="Car Owner App G08" />
+       <Stack.Group screenOptions={({ navigation }) => ({
+        headerRight: () => (
+          <TouchableOpacity onPress={() => {
+              //perform logout
+              performLogout({navigation})
+            }
+          } 
+          >
+            <Icon name="exit" size={35} color="black" />
+          </TouchableOpacity>
+        ) 
+      })}>
+        <Stack.Screen 
+          component={SignInScreen} 
+          name="Sign In Screen" 
+          options={{headerTitle: 'Car Owner App', headerRight: () => null}}
+        />
+        <Stack.Screen component={ListingScreen} name="Listing Screen"/>
+        <Stack.Screen component={BookingScreen} name='Booking Screen'/>    
+      </Stack.Group>
 
-      <Stack.Group screenOptions={({ navigation }) => ({
-          headerRight: () => (
-            <TouchableOpacity onPress={() => {
-                //perform logout
-                performLogout({navigation})
-              }
-            } 
-            >
-              <Icon name="exit" size={35} color="black" />
-            </TouchableOpacity>
-          ) 
-        })}>
-          <Stack.Screen component={ListingScreen} name="Listing Screen"/>
-          <Stack.Screen component={BookingScreen} name='Booking Screen'/>    
-        </Stack.Group>
       
+      
+      
+      
+ 
+
+
+
       </Stack.Navigator>
-
-
     </NavigationContainer>
   )
 }
