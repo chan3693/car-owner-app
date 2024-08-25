@@ -6,7 +6,7 @@ import { initializeApp } from "firebase/app";
 // import necessary firebase services
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getMessaging } from "firebase/messaging";
+import { getMessaging } from "@react-native-firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -35,4 +35,4 @@ export {auth}
 //export the database object to use in other files
 export { db }
 
-export { messaging }
+export { messaging}

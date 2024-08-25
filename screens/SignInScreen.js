@@ -97,10 +97,8 @@ const SignInScreen = ( {navigation} ) => {
 
                 navigation.replace("Listing Screen")
 
-                const token = await requestNotificationPermissions();
-                if (token) {
-                    console.log(`Notification token : ${token}`)
-                }
+                // Request notification permissions
+                await requestNotificationPermissions();
 
                 console.log(`Signed In successfully`)
             } else {

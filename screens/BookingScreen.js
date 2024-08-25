@@ -2,7 +2,6 @@ import { View, Text, StyleSheet, Pressable, Alert, Image, FlatList, ActivityIndi
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/FirebaseConfig';
-import { messaging } from '../config/FirebaseConfig';
 
 const BookingScreen = ({route}) => {
 
@@ -16,14 +15,6 @@ const BookingScreen = ({route}) => {
 
     useEffect( () =>{
         getBookingFromRenterDB()
-
-        const unsubscribe = messaging().onMessage(async remoteMessage => {
-            console.log('A new FCM message arrived!', remoteMessage);
-            getBookingFromRenterDB();
-        });
-
-        return unsubscribe;
-
     }, [])
 
     const getBookingFromRenterDB = async () => {
